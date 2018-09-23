@@ -17,6 +17,8 @@ void linearCompress(const int16_t* data, int32_t nSamples,
     *compressed = new uint8_t[SIZE];
     BitWriter writer(*compressed, SIZE);
 
+    if (stats) stats->shift = shiftBits;
+
     int16_t prev2 = 0;
     int16_t prev1 = 0;
     for (int i = 0; i < nSamples; i++) {
@@ -38,18 +40,14 @@ void linearCompress(const int16_t* data, int32_t nSamples,
             writer.write(15, 4);
             writer.write(uint16_t(sample), 16);
 
-            if (stats) {
-                stats->edgeWrites += 1;
-            }
+            if (stats) stats->edgeWrites += 1;
         }
         else {
             writer.write(bits - 1, 4); // Bits can be [1, 15], write out [0, 14]
             writer.write(sign, 1);
             writer.write(delta, bits);
 
-            if (stats) {
-                stats->buckets[bits - 1] += 1;
-            }
+            if (stats) stats->buckets[bits - 1] += 1;
         }
 
         prev2 = prev1;
@@ -102,6 +100,7 @@ void CompressStat::consolePrint() const
             buckets[b]);
     }
     printf("edgeWrites=%d\n", edgeWrites);
+    printf("shift bits=%d\n", shift);
 }
 
 
