@@ -5,9 +5,6 @@
 #include <limits.h>
 #include "bits.h"
 
-static const int32_t A = 1;
-static const int32_t B = 1;
-
 void linearCompress(const int16_t* data, int32_t nSamples, 
     uint8_t** compressed, int32_t* nCompressed, 
     int shiftBits,
@@ -22,7 +19,8 @@ void linearCompress(const int16_t* data, int32_t nSamples,
     int16_t prev2 = 0;
     int16_t prev1 = 0;
     for (int i = 0; i < nSamples; i++) {
-        int32_t guess = prev1 + (prev1 - prev2) * A / B;
+        int32_t guess = prev1 + (prev1 - prev2);
+
         int32_t sample = data[i] >> shiftBits;
         int32_t delta = sample - guess;
         int sign = 1;
@@ -67,7 +65,8 @@ void linearExpand(const uint8_t* compressed, int nCompressed,
     int16_t prev2 = 0;
     int16_t prev1 = 0;
     for (int i = 0; i < nSamples; ++i) {
-        int32_t guess = prev1 + (prev1 - prev2) * A / B;
+        int32_t guess = prev1 + (prev1 - prev2);
+
         uint32_t nBits = reader.read(4);
         int16_t sample = 0;
         if (nBits == 15) {
