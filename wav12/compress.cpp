@@ -91,13 +91,31 @@ void linearExpand(const uint8_t* compressed, int nCompressed,
 }
 
 
-Expander::Expander(IStream* compressed, int32_t nCompressed, int32_t nSamples, int shiftBits)
+Expander::Expander(IStream* compressed, int32_t nSamples, int shiftBits) :
+    m_bitReader(m_buffer, 0)
 {
     m_compressed = compressed;
-    m_nCompressed = nCompressed;
     m_nSamples = nSamples;
     m_shiftBits = shiftBits;
 }
+
+int32_t Expander::expand(int16_t* target, int nTarget)
+{
+    intptr_t remain = (m_buffer + BUFSIZE) - m_bitReader.srcPtr;
+    if (remain < 4) {
+        int32_t streamRemaining = m_compressed->remaining();
+        int32_t bufUsed = BUFSIZE - remain;
+        int fetch = wMin(streamRemaining, bufUsed);
+        if (fetch > 0) {
+            for (int i = 0; i < remain; ++i) {
+                m_buffer[i] = m_buffer[i + bufUsed];
+            }
+            m_compressed->get(m_buffer + remain, fetch);
+            m_bitReader.attach(m_buffer, fetch + remain);
+        }
+    }
+}
+
 
 
 void CompressStat::consolePrint() const
