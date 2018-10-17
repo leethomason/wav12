@@ -64,10 +64,18 @@ uint32_t BitReader::read(int nBits) {
     while (nBits) {
         if (accum.bitsUsed() == 0) {
             assert(accum.empty());
-            assert(src < start + nBytes);
             accum.clear();
-            accum.set(*src, 8);
-            ++src;
+
+            uint8_t val = 0;
+            if (stream) {
+                val = stream->get();
+            }
+            else {
+                assert(src < start + nBytes);
+                val = *src;
+                ++src;
+            }
+            accum.set(val, 8);
         }
         if (nBits <= accum.bitsUsed()) {
             result <<= nBits;
@@ -149,8 +157,6 @@ uint32_t BitReader::read(int nBits) {
 
     BitReader reader(store, NUM_CLEAR);
     for (int i = 0; i < NUM_CLEAR; ++i) {
-        if (i == 31)
-            int debug = 0;
         uint32_t v = reader.read(5 + i % 3);
         TEST_TRUE(v == i);
     }

@@ -1,6 +1,8 @@
 #ifndef BITS_INCLUDED
 #define BITS_INCLUDED
 
+#include "wav12stream.h"
+
 #include <stdint.h>
 #include <assert.h>
 
@@ -62,24 +64,25 @@ public:
         this->src = src;
         this->start = src;
         this->nBytes = n;
+        this->stream = 0;
+    }
+
+    BitReader(wav12::IStream* stream) {
+        this->src = 0;
+        this->start = 0;
+        this->nBytes = 0;
+        this->stream = stream;
     }
 
     uint32_t read(int nBits);
-
-    const uint8_t* srcPtr() const { return src; }
-
-    void attach(const uint8_t* newSrc, int newN) {
-        src = newSrc;
-        start = newSrc;
-        nBytes = newN;
-    }
 
     static bool TestReaderAndWriter();
 
 private:
     const uint8_t* src = 0;
-    const uint8_t* start = 0;   // only used for error checking.
-    int nBytes = 0;             // only used for error checking.
+    const uint8_t* start = 0;       // only used for error checking.
+    int nBytes = 0;                 // only used for error checking.
+    wav12::IStream* stream = 0;
     BitAccum accum;
 };
 

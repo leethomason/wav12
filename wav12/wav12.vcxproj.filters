@@ -24,6 +24,9 @@
     <ClInclude Include="..\wave_reader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="wav12stream.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="wav12.cpp">

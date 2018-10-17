@@ -1,6 +1,8 @@
 #ifndef WAV_COMPRESSION
 #define WAV_COMPRESSION
 
+#include "wav12stream.h"
+
 #include <stdint.h>
 #include <assert.h>
 #include <string.h>
@@ -31,16 +33,7 @@ namespace wav12 {
         int16_t* data, int32_t nSamples,
         int shiftBits = 0);
 
-    class IStream
-    {
-    public:
-        virtual void get(uint8_t* target, int n) = 0;
-        virtual int32_t size() = 0;
-        virtual int32_t pos() = 0;
-        virtual int32_t remaining() = 0;
-    };
-
-    class MemStream : public IStream
+    class MemStream : public wav12::IStream
     {
     public:
         MemStream(const uint8_t* mem, int32_t nBytes) {
@@ -56,7 +49,7 @@ namespace wav12 {
         }
 
         int32_t size() const { return m_nBytes; }
-        int32_t pos() { return m_ptr - m_mem; }
+        int32_t pos() { return int32_t(m_ptr - m_mem); }
 
     private:
         const uint8_t* m_mem;
@@ -80,10 +73,6 @@ namespace wav12 {
         int32_t m_nSamples;
         int32_t m_pos;
         int m_shiftBits;
-
-        static const int BUFSIZE = 16;
-        uint8_t m_buffer[BUFSIZE];
-        BitReader m_bitReader;
     };
 }
 #endif

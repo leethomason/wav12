@@ -150,6 +150,7 @@
     <ClInclude Include="..\wave_reader.h" />
     <ClInclude Include="bits.h" />
     <ClInclude Include="compress.h" />
+    <ClInclude Include="wav12stream.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\wave_reader.c" />
