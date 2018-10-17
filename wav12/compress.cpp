@@ -5,6 +5,8 @@
 #include <limits.h>
 #include "bits.h"
 
+using namespace wav12;
+
 void linearCompress(const int16_t* data, int32_t nSamples, 
     uint8_t** compressed, int32_t* nCompressed, 
     int shiftBits,
@@ -86,6 +88,15 @@ void linearExpand(const uint8_t* compressed, int nCompressed,
         prev2 = prev1;
         prev1 = sample;
     }
+}
+
+
+Expander::Expander(IStream* compressed, int32_t nCompressed, int32_t nSamples, int shiftBits)
+{
+    m_compressed = compressed;
+    m_nCompressed = nCompressed;
+    m_nSamples = nSamples;
+    m_shiftBits = shiftBits;
 }
 
 
