@@ -20,7 +20,7 @@ namespace wav12 {
         // 2: 4-7 etc.
         int buckets[16] = { 0 };
         int edgeWrites = 0;
-        bool shift = 0;
+        int shift = 0;
 
         void consolePrint() const;
     };

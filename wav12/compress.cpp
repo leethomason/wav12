@@ -16,7 +16,8 @@ void wav12::linearCompress(const int16_t* data, int32_t nSamples,
     *compressed = new uint8_t[SIZE];
     BitWriter writer(*compressed, SIZE);
 
-    if (stats) stats->shift = shiftBits;
+    if (stats) 
+        stats->shift = shiftBits;
 
     int32_t prev2 = 0;
     int32_t prev1 = 0;
@@ -40,14 +41,16 @@ void wav12::linearCompress(const int16_t* data, int32_t nSamples,
             writer.write(15, 4);
             writer.write(uint16_t(sample), 16);
 
-            if (stats) stats->edgeWrites += 1;
+            if (stats) 
+                stats->edgeWrites += 1;
         }
         else {
             writer.write(bits - 1, 4); // Bits can be [1, 15], write out [0, 14]
             writer.write(sign, 1);
             writer.write(delta, bits);
 
-            if (stats) stats->buckets[bits - 1] += 1;
+            if (stats) 
+                stats->buckets[bits - 1] += 1;
         }
 
         prev2 = prev1;
@@ -73,9 +76,9 @@ void innerLinearExpand(BitReader& reader, int32_t& prev1, int32_t& prev2,
             nBits++;
             assert(nBits > 0 && nBits < 16);
             uint32_t sign = reader.read(1);
-            uint32_t error = reader.read(nBits);
+            uint32_t scalar = reader.read(nBits);
 
-            int16_t delta = int16_t(error) * (sign == 1 ? 1 : -1);
+            int16_t delta = int16_t(scalar) * (sign == 1 ? 1 : -1);
             sample = guess + delta;
         }
         for (int c = 0; c < CHANNELS; ++c) {
