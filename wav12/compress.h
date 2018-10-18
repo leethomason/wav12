@@ -2,6 +2,7 @@
 #define WAV_COMPRESSION
 
 #include "wav12stream.h"
+#include "bits.h"
 
 #include <stdint.h>
 #include <assert.h>
@@ -33,6 +34,9 @@ namespace wav12 {
         int16_t* data, int32_t nSamples,
         int shiftBits = 0);
 
+    void innerLinearExpand(BitReader& reader, int32_t& prev1, int32_t& prev2, int shiftBits, int16_t* target, int n);
+
+
     class MemStream : public wav12::IStream
     {
     public:
@@ -42,10 +46,9 @@ namespace wav12 {
             m_nBytes = nBytes;
         }
 
-        void get(uint8_t* target, int n) {
-            assert(m_ptr + n < m_mem + m_nBytes);
-            memcpy(target, m_ptr, n);
-            m_ptr += n;
+        uint8_t get() {
+            assert(m_ptr < m_mem + m_nBytes);
+            return *m_ptr++;
         }
 
         int32_t size() const { return m_nBytes; }
@@ -64,7 +67,7 @@ namespace wav12 {
 
         // Expand to the target buffer with a length of nTarget.
         // Returns number of samples actually expanded.
-        int32_t expand(int16_t* target, int nTarget);
+        void expand(int16_t* target, int nTarget);
 
         bool done() const { return m_nSamples == m_pos; }
 
@@ -72,7 +75,9 @@ namespace wav12 {
         IStream* m_compressed;
         int32_t m_nSamples;
         int32_t m_pos;
+        int32_t m_prev1, m_prev2;
         int m_shiftBits;
+        BitReader m_bitReader;
     };
 }
 #endif
