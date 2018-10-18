@@ -34,9 +34,6 @@ namespace wav12 {
         int16_t* data, int32_t nSamples,
         int shiftBits = 0);
 
-    void innerLinearExpand(BitReader& reader, int32_t& prev1, int32_t& prev2, int shiftBits, int16_t* target, int n);
-
-
     class MemStream : public wav12::IStream
     {
     public:
@@ -68,6 +65,11 @@ namespace wav12 {
         // Expand to the target buffer with a length of nTarget.
         // Returns number of samples actually expanded.
         void expand(int16_t* target, int nTarget);
+
+        // Does a stereo expansion (both channels the same, of course)
+        // to 32 bits. nTarget is the samples per channel.
+        // Volume max is 65536
+        void expand2(int32_t* target, int nTarget, int32_t volume);
 
         bool done() const { return m_nSamples == m_pos; }
 
