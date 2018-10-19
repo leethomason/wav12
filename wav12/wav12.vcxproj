@@ -150,12 +150,14 @@
     <ClInclude Include="..\wave_reader.h" />
     <ClInclude Include="bits.h" />
     <ClInclude Include="compress.h" />
+    <ClInclude Include="tinyxml2.h" />
     <ClInclude Include="wav12stream.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\wave_reader.c" />
     <ClCompile Include="bits.cpp" />
     <ClCompile Include="compress.cpp" />
+    <ClCompile Include="tinyxml2.cpp" />
     <ClCompile Include="wav12.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
