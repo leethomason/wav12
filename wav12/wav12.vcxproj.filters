@@ -27,14 +27,11 @@
     <ClInclude Include="wav12stream.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="tinyxml2.h">
+    <ClInclude Include="..\tinyxml2.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="wav12.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\wave_reader.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -44,7 +41,10 @@
     <ClCompile Include="bits.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="tinyxml2.cpp">
+    <ClCompile Include="..\tinyxml2.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\wav12.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
