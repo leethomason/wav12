@@ -147,6 +147,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\memimage.h" />
     <ClInclude Include="..\tinyxml2.h" />
     <ClInclude Include="..\wave_reader.h" />
     <ClInclude Include="bits.h" />
