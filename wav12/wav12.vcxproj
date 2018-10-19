@@ -155,6 +155,7 @@
     <ClInclude Include="wav12stream.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\memimage.cpp" />
     <ClCompile Include="..\tinyxml2.cpp" />
     <ClCompile Include="..\wav12.cpp" />
     <ClCompile Include="..\wave_reader.c" />

@@ -22,12 +22,17 @@ struct MemUnit {
     uint32_t size;
 };
 
+
 struct MemImage {
     static const int NUM_DIR = 4;
     static const int NUM_FILES = 60;
 
     MemUnit dir[NUM_DIR];
     MemUnit file[NUM_FILES];
+
+    MemImage();
+    void addDir(const char* name);
+    void addFile(const char* name, void* data, int size);
 };
 
 #endif // MEMORY_IMAGE_INCLUDE
