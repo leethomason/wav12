@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SoundMem path="FlashMem">
+  <Directory path="Bespin2">
+    <File path="blaster.wav"/>
+    <File path="blaster2.wav" />
+    <File path="clash1.wav" />
+    <File path="clash2.wav" />
+    <File path="clash3.wav" />
+    <File path="hum.wav" shift="1"/>
+    <File path="poweron.wav" shift="2" />
+    <File path="poweroff.wav" shift="2" />
+    <File path="swing1.wav" />
+    <File path="swing2.wav" />
+    <File path="swing3.wav" />
+  </Directory>
+  <Directory path="Jaina">
+    <File path="blaster.wav"/>
+    <File path="blaster2.wav" />
+    <File path="clash1.wav" />
+    <File path="clash2.wav" />
+    <File path="hum.wav" shift="1"/>
+    <File path="poweron.wav" shift="2"/>
+    <File path="poweroff.wav" shift="2"/>
+    <File path="swing1.wav" />
+    <File path="swing2.wav" />
+    <File path="swing3.wav" />
+  </Directory>
+</SoundMem>
