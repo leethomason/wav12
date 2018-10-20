@@ -23,9 +23,9 @@ void wav12::linearCompress(const int16_t* data, int32_t nSamples,
     int32_t prev1 = 0;
     for (int i = 0; i < nSamples; i++) {
         int32_t guess = prev1 + (prev1 - prev2);
-
         int32_t sample = data[i] >> shiftBits;
         int32_t delta = sample - guess;
+
         int sign = 1;
         if (delta < 0) {
             sign = 0;

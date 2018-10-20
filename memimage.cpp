@@ -7,17 +7,25 @@
 MemImageUtil::MemImageUtil()
 {
     assert(sizeof(MemImage) == 1024);
-    memset(dir, 0, sizeof(MemUnit) * NUM_DIR);
-    memset(file, 0, sizeof(MemUnit) * NUM_FILES);
+    dataVec = new uint8_t[DATA_VEC_SIZE];
+    memset(dataVec, 0, DATA_VEC_SIZE);
+    currentPos = sizeof(MemImage);  // move the write head past the header.
+}
+
+
+MemImageUtil::~MemImageUtil()
+{
+    delete[] dataVec;
 }
 
 
 void MemImageUtil::addDir(const char* name)
 {
     currentDir++;
-    assert(currentDir < NUM_DIR);
-    strncpy(dir[currentDir].name, name, MemUnit::NAME_LEN);
-    dir[currentDir].offset = currentFile + 1;
+    assert(currentDir < MemImage::NUM_DIR);
+    MemImage* image = (MemImage*)dataVec;
+    strncpy(image->dir[currentDir].name, name, MemUnit::NAME_LEN);
+    image->dir[currentDir].offset = currentFile + 1;
 }
 
 
@@ -25,16 +33,24 @@ void MemImageUtil::addFile(const char* name, void* data, int size)
 {
     assert(currentDir >= 0);
     currentFile++;
-    assert(currentFile < NUM_FILES);
+    assert(currentFile < MemImage::NUM_FILES);
     
-    dir[currentDir].size += 1;
-    strncpy(file[currentFile].name, name, MemUnit::NAME_LEN);
-    file[currentFile].offset = uint32_t(sizeof(MemImage) + dataVec.size());
-    file[currentFile].size = size;
+    MemImage* image = (MemImage*)dataVec;
+    image->dir[currentDir].size += 1;
+    strncpy(image->file[currentFile].name, name, MemUnit::NAME_LEN);
+    image->file[currentFile].offset = currentPos;
+    image->file[currentFile].size = size;
 
-    size_t t = dataVec.size();
-    dataVec.resize(dataVec.size() + size);
-    memcpy(&dataVec[t], data, size);
+    memcpy(dataVec + currentPos, data, size);
+    currentPos += size;
+}
+
+
+void MemImageUtil::write(const char* name)
+{
+    FILE* fp = fopen(name, "wb");
+    fwrite(dataVec, currentPos, 1, fp);
+    fclose(fp);
 }
 
 
@@ -42,19 +58,20 @@ void MemImageUtil::dumpConsole()
 {
     char buf[9] = { 0 };
     uint32_t totalUncompressed = 0, totalSize = 0;
+    const MemImage* image = (const MemImage*)dataVec;
 
-    for (int d = 0; d < NUM_DIR; ++d) {
-        if (dir[d].name[0]) {
-            strcpy(buf, dir[d].name);
+    for (int d = 0; d < MemImage::NUM_DIR; ++d) {
+        if (image->dir[d].name[0]) {
+            strcpy(buf, image->dir[d].name);
             printf("Dir: %s\n", buf);
              
-            for (unsigned f = 0; f < dir[d].size; ++f) {
-                const MemUnit& fileUnit = file[dir[d].offset + f];
+            for (unsigned f = 0; f < image->dir[d].size; ++f) {
+                const MemUnit& fileUnit = image->file[image->dir[d].offset + f];
                 std::string sName;
                 sName.append(fileUnit.name, fileUnit.name + MemUnit::NAME_LEN);
 
                 const wav12::Wav12Header* header =
-                    (const wav12::Wav12Header*)(&dataVec[fileUnit.offset - sizeof(MemImage)]);
+                    (const wav12::Wav12Header*)(dataVec + fileUnit.offset);
 
                 printf("   %8s at %8d size=%6d comp=%d ratio=%5.2f shift=%d\n", 
                     sName.c_str(), 
@@ -71,7 +88,7 @@ void MemImageUtil::dumpConsole()
             }
         }
     }
-    size_t totalImageSize = sizeof(MemImage) + dataVec.size();
+    size_t totalImageSize = sizeof(MemImage) + currentPos;
     printf("Overall ratio=%5.2f\n", (float)totalSize / (float)(totalUncompressed));
     printf("Image size=%d bytes, %d k\n", int(totalImageSize), int(totalImageSize / 1024));
 }
