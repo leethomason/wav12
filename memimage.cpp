@@ -61,6 +61,8 @@ void MemImageUtil::dumpConsole()
     const MemImage* image = (const MemImage*)dataVec;
 
     for (int d = 0; d < MemImage::NUM_DIR; ++d) {
+        uint32_t dirTotal = 0;
+
         if (image->dir[d].name[0]) {
             strcpy(buf, image->dir[d].name);
             printf("Dir: %s\n", buf);
@@ -73,20 +75,20 @@ void MemImageUtil::dumpConsole()
                 const wav12::Wav12Header* header =
                     (const wav12::Wav12Header*)(dataVec + fileUnit.offset);
 
-                printf("   %8s at %8d size=%6d comp=%d ratio=%5.2f shift=%d\n", 
+                printf("   %8s at %8d size=%6d (%3dk) comp=%d ratio=%4.2f shift=%d\n", 
                     sName.c_str(), 
-                    fileUnit.offset, fileUnit.size,
+                    fileUnit.offset, fileUnit.size, fileUnit.size / 1024,
                     header->format,
                     float(header->lenInBytes) / (float)(header->nSamples*2),
                     header->shiftBits);
 
                 totalUncompressed += header->nSamples * 2;
                 totalSize += header->lenInBytes;
-
-                //const wav12::Wav12Header* header = (const wav12::Wav12Header*)(&buf[dir[d].offset]);
-                //printf("    %8s compressed=%d\n", header.)
+                dirTotal += header->lenInBytes;
             }
         }
+        if (dirTotal)
+            printf("  Dir total=%dk\n", dirTotal / 1024);
     }
     size_t totalImageSize = sizeof(MemImage) + currentPos;
     printf("Overall ratio=%5.2f\n", (float)totalSize / (float)(totalUncompressed));
