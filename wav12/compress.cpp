@@ -12,7 +12,7 @@ void wav12::linearCompress(const int16_t* data, int32_t nSamples,
     int shiftBits,
     CompressStat* stats)
 {
-    static const int SIZE = nSamples * 3;
+    const int SIZE = nSamples * 4;      // *4 is double size
     *compressed = new uint8_t[SIZE];
     BitWriter writer(*compressed, SIZE);
 

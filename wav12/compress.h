@@ -13,6 +13,16 @@ namespace wav12 {
     template<class T>
     T wMin(const T& a, const T& b) { return a < b ? a : b; }
 
+    struct Wav12Header
+    {
+        char id[4];             // 'wv12'
+        uint32_t lenInBytes;    // after header, compressed size
+        uint32_t nSamples;
+        uint8_t  format;        // 0 uncompressed, 1 compressed
+        uint8_t  shiftBits;     // only if compressed
+        uint8_t  unused[2];
+    };
+
     struct CompressStat
     {
         // 0: 0-1
