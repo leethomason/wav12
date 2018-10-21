@@ -35,6 +35,13 @@ namespace wav12 {
         void consolePrint() const;
     };
 
+    struct Context
+    {
+        uint32_t prev1 = 0;
+        uint32_t prev2 = 0;
+        uint32_t prev3 = 0;
+    };
+
     void linearCompress(const int16_t* data, int32_t nSamples,
         uint8_t** compressed, int32_t* nCompressed,
         int shiftBits = 0,
@@ -87,7 +94,7 @@ namespace wav12 {
         IStream* m_compressed;
         int32_t m_nSamples;
         int32_t m_pos;
-        int32_t m_prev1, m_prev2;
+        Context m_context;
         int m_shiftBits;
         BitReader m_bitReader;
     };

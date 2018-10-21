@@ -18,11 +18,14 @@ void wav12::linearCompress(const int16_t* data, int32_t nSamples,
 
     if (stats) 
         stats->shift = shiftBits;
-
+    int32_t prev3 = 0;
     int32_t prev2 = 0;
     int32_t prev1 = 0;
     for (int i = 0; i < nSamples; i++) {
-        int32_t guess = prev1 + (prev1 - prev2);
+        //int32_t guess = prev1 + prev1 - prev2;                                                // 0.67 on the test set
+        //int32_t guess = prev1 + (prev1 - prev2) + ((prev1 - prev2) - (prev2 - prev3)) / 2;    // 0.65 1614 (correct)
+        int32_t guess = 3 * prev1 - 3 * prev2 + prev3;                                          // 0.65 1616 simplified (no division)
+
         int32_t sample = data[i] >> shiftBits;
         int32_t delta = sample - guess;
 
@@ -53,6 +56,7 @@ void wav12::linearCompress(const int16_t* data, int32_t nSamples,
                 stats->buckets[bits - 1] += 1;
         }
 
+        prev3 = prev2;
         prev2 = prev1;
         prev1 = sample;
     }
@@ -61,11 +65,11 @@ void wav12::linearCompress(const int16_t* data, int32_t nSamples,
 }
 
 template<typename T, int CHANNELS>
-void innerLinearExpand(BitReader& reader, int32_t& prev1, int32_t& prev2, 
+void innerLinearExpand(BitReader& reader, Context& context,
     int shiftBits, T* target, int n, T volume)
 {
     for (int i = 0; i < n; ++i) {
-        int32_t guess = prev1 + (prev1 - prev2);
+        int32_t guess = 3 * context.prev1 - 3 * context.prev2 + context.prev3;
 
         uint32_t nBits = reader.read(4);
         int16_t sample = 0;
@@ -86,8 +90,9 @@ void innerLinearExpand(BitReader& reader, int32_t& prev1, int32_t& prev2,
             ++target;
         }
 
-        prev2 = prev1;
-        prev1 = sample;
+        context.prev3 = context.prev2;
+        context.prev2 = context.prev1;
+        context.prev1 = sample;
     }
 }
 
@@ -97,9 +102,8 @@ void wav12::linearExpand(const uint8_t* compressed, int nCompressed,
     int shiftBits)
 {
     BitReader reader(compressed, nCompressed);
-    int32_t prev2 = 0;
-    int32_t prev1 = 0;
-    innerLinearExpand<int16_t, 1>(reader, prev1, prev2, shiftBits, data, nSamples, 1);
+    Context context;
+    innerLinearExpand<int16_t, 1>(reader, context, shiftBits, data, nSamples, 1);
 }
 
 
@@ -109,8 +113,6 @@ Expander::Expander(IStream* compressed, int32_t nSamples, int shiftBits) :
     m_compressed = compressed;
     m_nSamples = nSamples;
     m_pos = 0;
-    m_prev1 = 0;
-    m_prev2 = 0;
     m_shiftBits = shiftBits;
 }
 
@@ -118,14 +120,14 @@ Expander::Expander(IStream* compressed, int32_t nSamples, int shiftBits) :
 void Expander::expand(int16_t* target, int nTarget)
 {
     assert(nTarget <= (m_nSamples - m_pos));
-    innerLinearExpand<int16_t, 1>(m_bitReader, m_prev1, m_prev2, m_shiftBits, target, nTarget, 1);
+    innerLinearExpand<int16_t, 1>(m_bitReader, m_context, m_shiftBits, target, nTarget, 1);
     m_pos += nTarget;
 }
 
 
 void Expander::expand2(int32_t* target, int nTarget, int32_t volume)
 {
-    innerLinearExpand<int32_t, 2>(m_bitReader, m_prev1, m_prev2, m_shiftBits, target, nTarget, volume);
+    innerLinearExpand<int32_t, 2>(m_bitReader, m_context, m_shiftBits, target, nTarget, volume);
 }
 
 
