@@ -43,7 +43,9 @@ public:
     void addDir(const char* name);
     void addFile(const char* name, void* data, int size);
     void dumpConsole();
+
     void write(const char* name);
+    void writeText(const char* name);
 
 private:
     static const int DATA_VEC_SIZE = 4 * 1024 * 1024;   // 4 meg for overflow, experimentation

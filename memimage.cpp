@@ -53,6 +53,25 @@ void MemImageUtil::write(const char* name)
     fclose(fp);
 }
 
+void MemImageUtil::writeText(const char* name)
+{
+    FILE* fp = fopen(name, "w");
+
+    fprintf(fp, "%d\n", currentPos);
+    int line = 0;
+    for (uint32_t i = 0; i < currentPos; ++i) {
+        fprintf(fp, "%02x", dataVec[i]);
+        line++;
+        if (line == 64) {
+            fprintf(fp, "\n");
+            line = 0;
+        }
+    }
+    if (line) {
+        fprintf(fp, "\n");
+    }
+    fclose(fp);
+}
 
 void MemImageUtil::dumpConsole()
 {
