@@ -60,6 +60,13 @@ private:
 class BitReader
 {
 public:
+    BitReader() {
+        this->src = 0;
+        this->start = 0;
+        this->nBytes = 0;
+        this->stream = 0;
+    }
+
     BitReader(const uint8_t* src, int n) {
         this->src = src;
         this->start = src;
@@ -68,6 +75,13 @@ public:
     }
 
     BitReader(wav12::IStream* stream) {
+        this->src = 0;
+        this->start = 0;
+        this->nBytes = 0;
+        this->stream = stream;
+    }
+
+    void init(wav12::IStream* stream) {
         this->src = 0;
         this->start = 0;
         this->nBytes = 0;

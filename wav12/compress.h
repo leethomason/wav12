@@ -8,10 +8,6 @@
 #include <assert.h>
 #include <string.h>
 
-#ifdef _WIN32
-#include <stdio.h>
-#endif
-
 namespace wav12 {
 
     template<class T>
@@ -69,6 +65,14 @@ namespace wav12 {
             return *m_ptr++;
         }
 
+        int16_t get16() {
+            assert((m_nBytes & 1) == 0);
+            assert(m_ptr + 1 < m_mem + m_nBytes);
+            uint16_t v = m_ptr[0] + m_ptr[1] * 256; // prevent un-aligned reads on the M0.
+            m_ptr += 2;
+            return (int16_t)v;
+        }
+
         int32_t size() const { return m_nBytes; }
         int32_t pos() { return int32_t(m_ptr - m_mem); }
 
@@ -78,26 +82,43 @@ namespace wav12 {
         int32_t m_nBytes;
     };
 
-#ifdef _WIN32
-    class FileStream : public wav12::IStream
+    
+    class ChunkStream : public wav12::IStream
     {
     public:
-        FileStream(FILE* fp);
+        ChunkStream(uint8_t* subBuffer, int subBufferSize) {
+            m_subBuffer = subBuffer;
+            m_subBufferSize = subBufferSize;
+            m_subBufferPos = m_subBufferSize;   // buffer is empty
+        }
+        
+        uint8_t get() {
+            if (m_subBufferPos == m_subBufferSize) fillSubBuffer();
+            return m_subBuffer[m_subBufferPos++];
+        }
 
-        uint8_t get();
-        int32_t size() const { return m_size; }
-        int32_t pos() { return m_pos; }
-    private:
-        FILE* m_fp;
-        int32_t m_size;
-        int32_t m_pos;
+        int16_t get16() {
+            if (m_subBufferPos == m_subBufferSize) fillSubBuffer();
+            uint16_t v = m_subBuffer[m_subBufferPos] + m_subBuffer[m_subBufferPos + 1] * 256;
+            m_subBufferPos += 2;
+            return (int16_t)v;
+        }
+
+        virtual void fillSubBuffer() = 0;
+
+    protected:
+        uint8_t* m_subBuffer;
+        int m_subBufferSize;
+        int m_subBufferPos;
     };
-#endif
+
 
     class Expander
     {
     public:
-        Expander(IStream* compressed, int32_t nSamples, int shiftBits);
+        Expander();
+        Expander(IStream* stream, int32_t nSamples, int format, int shiftBits);
+        void init(IStream* stream, int32_t nSamples, int format, int shiftBits);
 
         // Expand to the target buffer with a length of nTarget.
         // Returns number of samples actually expanded.
@@ -111,10 +132,11 @@ namespace wav12 {
         bool done() const { return m_nSamples == m_pos; }
 
     private:
-        IStream* m_compressed;
+        IStream* m_stream;
         int32_t m_nSamples;
         int32_t m_pos;
         Context m_context;
+        int m_format;
         int m_shiftBits;
         BitReader m_bitReader;
     };

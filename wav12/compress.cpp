@@ -107,27 +107,50 @@ void wav12::linearExpand(const uint8_t* compressed, int nCompressed,
 }
 
 
-Expander::Expander(IStream* compressed, int32_t nSamples, int shiftBits) :
-    m_bitReader(compressed)
+Expander::Expander(IStream* stream, int32_t nSamples, int format, int shiftBits)
 {
-    m_compressed = compressed;
+    init(stream, nSamples, format, shiftBits);
+}
+
+
+void Expander::init(IStream* stream, int32_t nSamples, int format, int shiftBits)
+{
+    m_stream = stream;
     m_nSamples = nSamples;
     m_pos = 0;
+    m_format = format;
     m_shiftBits = shiftBits;
+    m_bitReader.init(stream);
 }
 
 
 void Expander::expand(int16_t* target, int nTarget)
 {
     assert(nTarget <= (m_nSamples - m_pos));
-    innerLinearExpand<int16_t, 1>(m_bitReader, m_context, m_shiftBits, target, nTarget, 1);
+    if (m_format == 0) {
+        while (nTarget--) {
+            *target++ = m_stream->get16();
+        }
+    }
+    else {
+        innerLinearExpand<int16_t, 1>(m_bitReader, m_context, m_shiftBits, target, nTarget, 1);
+    }
     m_pos += nTarget;
 }
 
 
 void Expander::expand2(int32_t* target, int nTarget, int32_t volume)
 {
-    innerLinearExpand<int32_t, 2>(m_bitReader, m_context, m_shiftBits, target, nTarget, volume);
+    if (m_format == 0) {
+        while (nTarget--) {
+            int32_t v = m_stream->get16() * volume;
+            *target++ = v;
+            *target++ = v;
+        }
+    }
+    else {
+        innerLinearExpand<int32_t, 2>(m_bitReader, m_context, m_shiftBits, target, nTarget, volume);
+    }
 }
 
 
@@ -143,21 +166,3 @@ void CompressStat::consolePrint() const
     printf("edgeWrites=%d\n", edgeWrites);
     printf("shift bits=%d\n", shift);
 }
-
-#ifdef _WIN32
-FileStream::FileStream(FILE* fp)
-{
-    m_fp = fp;
-    fseek(m_fp, 0, SEEK_END);
-    m_size = (int32_t)ftell(fp);
-    fseek(m_fp, 0, SEEK_SET);
-    m_pos = 0;
-}
-
-uint8_t FileStream::get()
-{
-    m_pos++;
-    return fgetc(m_fp);
-}
-
-#endif

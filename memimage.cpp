@@ -76,10 +76,38 @@ void MemImageUtil::writeText(const char* name)
     fclose(fp);
 }
 
+class MemChunkStream : public wav12::ChunkStream
+{
+public:
+    MemChunkStream(const uint8_t* mem, uint32_t memSize, uint8_t* subBuffer, int subBufferSize) :
+        ChunkStream(subBuffer, subBufferSize),
+        m_mem(mem),
+        m_pos(0),
+        m_size(memSize)
+    {}
+
+    virtual void fillSubBuffer() {
+        assert((m_pos & 1) == 0);
+        int toRead = wav12::wMin(int(m_size - m_pos), m_subBufferSize);
+        assert(m_pos + toRead <= m_size);
+        memcpy(m_subBuffer, m_mem + m_pos, toRead);
+        m_subBufferPos = 0;
+        m_pos += toRead;
+        assert(m_pos <= m_size);
+    }
+
+private:
+    const uint8_t* m_mem;
+    uint32_t m_pos;
+    uint32_t m_size;
+};
+
 void MemImageUtil::dumpConsole()
 {
     uint32_t totalUncompressed = 0, totalSize = 0;
     const MemImage* image = (const MemImage*)dataVec;
+    static const int SUB_BUFFER_SIZE = 64;
+    uint8_t subBuffer[SUB_BUFFER_SIZE];
 
     for (int d = 0; d < MemImage::NUM_DIR; ++d) {
         uint32_t dirTotal = 0;
@@ -102,48 +130,50 @@ void MemImageUtil::dumpConsole()
                 {
                     std::string path = std::string(dirName) 
                         + "/" + std::string(fileName) + std::string(".wav");
-                    wave_reader_error error = WR_NO_ERROR;
-                    wave_reader* wr = wave_reader_open(path.c_str(), &error);
-                    assert(error == WR_NO_ERROR);
-                    int nSamples = wave_reader_get_num_samples(wr);
-                    int16_t* wav = new int16_t[nSamples];
-                    wave_reader_get_samples(wr, nSamples, wav);
+
+                    int16_t* wav = 0;
+                    int nSamples = 0;
+                    {
+                        wave_reader_error error = WR_NO_ERROR;
+                        wave_reader* wr = wave_reader_open(path.c_str(), &error);
+                        assert(error == WR_NO_ERROR);
+                        nSamples = wave_reader_get_num_samples(wr);
+                        wav = new int16_t[nSamples];
+                        wave_reader_get_samples(wr, nSamples, wav);
+                        wave_reader_close(wr);
+                    }
+
+                    MemChunkStream fcs(
+                        dataVec + fileUnit.offset + sizeof(wav12::Wav12Header), 
+                        fileUnit.size,
+                        subBuffer, SUB_BUFFER_SIZE);
+
+                    assert(fileUnit.size == header->lenInBytes + sizeof(wav12::Wav12Header));
+                    assert(nSamples == header->nSamples);
+                    
+                    wav12::MemStream memStream(
+                        dataVec + fileUnit.offset + sizeof(wav12::Wav12Header),
+                        fileUnit.size);
+                    
+                    wav12::Expander expander(&fcs, header->nSamples, header->format, header->shiftBits);
+                    int errorRange = 1 << header->shiftBits;
 
                     static const int BUFSIZE = 256;
                     int16_t buf[BUFSIZE];
 
-                    assert(fileUnit.size == header->lenInBytes + sizeof(wav12::Wav12Header));
+                    for (int i = 0; i < nSamples; i += BUFSIZE) {
+                        int n = wav12::wMin(BUFSIZE, nSamples - i);
+                        expander.expand(buf, n);
 
-                    if (header->format == 1) {
-                        wav12::MemStream memStream(
-                            dataVec + fileUnit.offset + sizeof(wav12::Wav12Header),
-                            fileUnit.size);
-
-                        wav12::Expander expander(&memStream, header->nSamples, header->shiftBits);
-                        int errorRange = 1 << header->shiftBits;
-
-                        for (int i = 0; i < nSamples; i += BUFSIZE) {
-                            int n = wav12::wMin(BUFSIZE, nSamples - i);
-                            expander.expand(buf, n);
-
-                            for (int j = 0; j < n; ++j) {
-                                if (abs(buf[j] - wav[i + j]) >= errorRange) {
-                                    assert(false);
-                                    okay = false;
-                                }
+                        for (int j = 0; j < n; ++j) {
+                            if (abs(buf[j] - wav[i + j]) >= errorRange) {
+                                assert(false);
+                                okay = false;
                             }
-                        }
-                    }
-                    else {
-                        int cmp = memcmp(wav, dataVec + fileUnit.offset + sizeof(wav12::Wav12Header), nSamples * 2);
-                        if (cmp) {
-                            assert(false);
-                            okay = false;
                         }
                     }
 
                     delete[] wav;
-                    wave_reader_close(wr);
                 }
 
                 printf("   %8s at %8d size=%6d (%3dk) comp=%d ratio=%4.2f shift=%d valid=%s\n", 

@@ -8,8 +8,7 @@ namespace wav12 {
     class IStream {
     public:
         virtual uint8_t get() = 0;
-        virtual int32_t size() const = 0;
-        virtual int32_t pos() = 0;
+        virtual int16_t get16() = 0;
     };
 
 }
