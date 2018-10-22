@@ -2,6 +2,9 @@
 #include <string.h>
 
 #include "memimage.h"
+extern "C" { 
+#include "wave_reader.h" 
+}
 #include "./wav12/compress.h"
 
 MemImageUtil::MemImageUtil()
@@ -75,7 +78,6 @@ void MemImageUtil::writeText(const char* name)
 
 void MemImageUtil::dumpConsole()
 {
-    char buf[9] = { 0 };
     uint32_t totalUncompressed = 0, totalSize = 0;
     const MemImage* image = (const MemImage*)dataVec;
 
@@ -83,23 +85,74 @@ void MemImageUtil::dumpConsole()
         uint32_t dirTotal = 0;
 
         if (image->dir[d].name[0]) {
-            strcpy(buf, image->dir[d].name);
-            printf("Dir: %s\n", buf);
+            char dirName[9] = { 0 };
+            strncpy(dirName, image->dir[d].name, 8);
+            printf("Dir: %s\n", dirName);
              
             for (unsigned f = 0; f < image->dir[d].size; ++f) {
                 const MemUnit& fileUnit = image->file[image->dir[d].offset + f];
-                std::string sName;
-                sName.append(fileUnit.name, fileUnit.name + MemUnit::NAME_LEN);
+                char fileName[9] = { 0 };
+                strncpy(fileName, fileUnit.name, 8);
 
                 const wav12::Wav12Header* header =
                     (const wav12::Wav12Header*)(dataVec + fileUnit.offset);
 
-                printf("   %8s at %8d size=%6d (%3dk) comp=%d ratio=%4.2f shift=%d\n", 
-                    sName.c_str(), 
+                // Verify!
+                bool okay = true;
+                {
+                    std::string path = std::string(dirName) 
+                        + "/" + std::string(fileName) + std::string(".wav");
+                    wave_reader_error error = WR_NO_ERROR;
+                    wave_reader* wr = wave_reader_open(path.c_str(), &error);
+                    assert(error == WR_NO_ERROR);
+                    int nSamples = wave_reader_get_num_samples(wr);
+                    int16_t* wav = new int16_t[nSamples];
+                    wave_reader_get_samples(wr, nSamples, wav);
+
+                    static const int BUFSIZE = 256;
+                    int16_t buf[BUFSIZE];
+
+                    assert(fileUnit.size == header->lenInBytes + sizeof(wav12::Wav12Header));
+
+                    if (header->format == 1) {
+                        wav12::MemStream memStream(
+                            dataVec + fileUnit.offset + sizeof(wav12::Wav12Header),
+                            fileUnit.size);
+
+                        wav12::Expander expander(&memStream, header->nSamples, header->shiftBits);
+                        int errorRange = 1 << header->shiftBits;
+
+                        for (int i = 0; i < nSamples; i += BUFSIZE) {
+                            int n = wav12::wMin(BUFSIZE, nSamples - i);
+                            expander.expand(buf, n);
+
+                            for (int j = 0; j < n; ++j) {
+                                if (abs(buf[j] - wav[i + j]) >= errorRange) {
+                                    assert(false);
+                                    okay = false;
+                                }
+                            }
+                        }
+                    }
+                    else {
+                        int cmp = memcmp(wav, dataVec + fileUnit.offset + sizeof(wav12::Wav12Header), nSamples * 2);
+                        if (cmp) {
+                            assert(false);
+                            okay = false;
+                        }
+                    }
+
+                    delete[] wav;
+                    wave_reader_close(wr);
+                }
+
+                printf("   %8s at %8d size=%6d (%3dk) comp=%d ratio=%4.2f shift=%d valid=%s\n", 
+                    fileName, 
                     fileUnit.offset, fileUnit.size, fileUnit.size / 1024,
                     header->format,
                     float(header->lenInBytes) / (float)(header->nSamples*2),
-                    header->shiftBits);
+                    header->shiftBits,
+                    okay ? "true" : "ERROR" );
 
                 totalUncompressed += header->nSamples * 2;
                 totalSize += header->lenInBytes;

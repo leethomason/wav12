@@ -8,6 +8,10 @@
 #include <assert.h>
 #include <string.h>
 
+#ifdef _WIN32
+#include <stdio.h>
+#endif
+
 namespace wav12 {
 
     template<class T>
@@ -73,6 +77,22 @@ namespace wav12 {
         const uint8_t* m_ptr;
         int32_t m_nBytes;
     };
+
+#ifdef _WIN32
+    class FileStream : public wav12::IStream
+    {
+    public:
+        FileStream(FILE* fp);
+
+        uint8_t get();
+        int32_t size() const { return m_size; }
+        int32_t pos() { return m_pos; }
+    private:
+        FILE* m_fp;
+        int32_t m_size;
+        int32_t m_pos;
+    };
+#endif
 
     class Expander
     {

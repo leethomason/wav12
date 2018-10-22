@@ -144,4 +144,20 @@ void CompressStat::consolePrint() const
     printf("shift bits=%d\n", shift);
 }
 
+#ifdef _WIN32
+FileStream::FileStream(FILE* fp)
+{
+    m_fp = fp;
+    fseek(m_fp, 0, SEEK_END);
+    m_size = (int32_t)ftell(fp);
+    fseek(m_fp, 0, SEEK_SET);
+    m_pos = 0;
+}
 
+uint8_t FileStream::get()
+{
+    m_pos++;
+    return fgetc(m_fp);
+}
+
+#endif
