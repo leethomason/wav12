@@ -156,7 +156,7 @@ uint32_t BitReader::read(int nBits) {
     writer.close();
 
     BitReader reader(store, NUM_CLEAR);
-    for (int i = 0; i < NUM_CLEAR; ++i) {
+    for (uint32_t i = 0; i < NUM_CLEAR; ++i) {
         uint32_t v = reader.read(5 + i % 3);
         TEST_TRUE(v == i);
     }

@@ -65,7 +65,7 @@ void wav12::linearCompress(const int16_t* data, int32_t nSamples,
 }
 
 template<typename T, int CHANNELS>
-void innerLinearExpand(BitReader& reader, Context& context,
+void innerLinearExpand(BitReader& reader, wav12::Context& context,
     int shiftBits, T* target, int n, T volume)
 {
     for (int i = 0; i < n; ++i) {
@@ -97,7 +97,7 @@ void innerLinearExpand(BitReader& reader, Context& context,
 }
 
 
-void wav12::linearExpand(const uint8_t* compressed, int nCompressed,
+void linearExpand(const uint8_t* compressed, int nCompressed,
     int16_t* data, int32_t nSamples,
     int shiftBits)
 {
@@ -107,13 +107,19 @@ void wav12::linearExpand(const uint8_t* compressed, int nCompressed,
 }
 
 
-Expander::Expander(IStream* stream, int32_t nSamples, int format, int shiftBits)
+Expander::Expander()
+{
+    init(0, 0, 0, 0);
+}
+
+
+Expander::Expander(IStream* stream, uint32_t nSamples, int format, int shiftBits)
 {
     init(stream, nSamples, format, shiftBits);
 }
 
 
-void Expander::init(IStream* stream, int32_t nSamples, int format, int shiftBits)
+void Expander::init(IStream* stream, uint32_t nSamples, int format, int shiftBits)
 {
     m_stream = stream;
     m_nSamples = nSamples;
@@ -124,9 +130,11 @@ void Expander::init(IStream* stream, int32_t nSamples, int format, int shiftBits
 }
 
 
-void Expander::expand(int16_t* target, int nTarget)
+void Expander::expand(int16_t* target, uint32_t nTarget)
 {
     assert(nTarget <= (m_nSamples - m_pos));
+    m_pos += nTarget;
+
     if (m_format == 0) {
         while (nTarget--) {
             *target++ = m_stream->get16();
@@ -135,12 +143,12 @@ void Expander::expand(int16_t* target, int nTarget)
     else {
         innerLinearExpand<int16_t, 1>(m_bitReader, m_context, m_shiftBits, target, nTarget, 1);
     }
-    m_pos += nTarget;
 }
 
 
-void Expander::expand2(int32_t* target, int nTarget, int32_t volume)
+void Expander::expand2(int32_t* target, uint32_t nTarget, int32_t volume)
 {
+    m_pos += nTarget;
     if (m_format == 0) {
         while (nTarget--) {
             int32_t v = m_stream->get16() * volume;

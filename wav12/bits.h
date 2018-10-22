@@ -86,6 +86,7 @@ public:
         this->start = 0;
         this->nBytes = 0;
         this->stream = stream;
+        this->accum.clear();
     }
 
     uint32_t read(int nBits);

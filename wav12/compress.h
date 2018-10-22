@@ -117,24 +117,27 @@ namespace wav12 {
     {
     public:
         Expander();
-        Expander(IStream* stream, int32_t nSamples, int format, int shiftBits);
-        void init(IStream* stream, int32_t nSamples, int format, int shiftBits);
+        Expander(IStream* stream, uint32_t nSamples, int format, int shiftBits);
+        void init(IStream* stream, uint32_t nSamples, int format, int shiftBits);
 
         // Expand to the target buffer with a length of nTarget.
         // Returns number of samples actually expanded.
-        void expand(int16_t* target, int nTarget);
+        void expand(int16_t* target, uint32_t nTarget);
 
         // Does a stereo expansion (both channels the same, of course)
         // to 32 bits. nTarget is the samples per channel.
         // Volume max is 65536
-        void expand2(int32_t* target, int nTarget, int32_t volume);
+        void expand2(int32_t* target, uint32_t nTarget, int32_t volume);
 
         bool done() const { return m_nSamples == m_pos; }
+        
+        uint32_t samples() const { return m_nSamples; }
+        uint32_t pos() const     { return m_pos; }
 
     private:
         IStream* m_stream;
-        int32_t m_nSamples;
-        int32_t m_pos;
+        uint32_t m_nSamples;
+        uint32_t m_pos;
         Context m_context;
         int m_format;
         int m_shiftBits;
