@@ -97,7 +97,7 @@ void innerLinearExpand(BitReader& reader, wav12::Context& context,
 }
 
 
-void linearExpand(const uint8_t* compressed, int nCompressed,
+void wav12::linearExpand(const uint8_t* compressed, int nCompressed,
     int16_t* data, int32_t nSamples,
     int shiftBits)
 {
